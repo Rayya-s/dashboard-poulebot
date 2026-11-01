@@ -1208,7 +1208,7 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
             document.getElementById('txCommandPreview').textContent = buildBotCommandString();
         }
 
-        function submitTransaction(e) {
+       async function submitTransaction(e) {
             e.preventDefault();
             const tipe = document.getElementById('txTypeInput').value;
             const item = document.getElementById('txItemInput').value.trim();
@@ -1216,31 +1216,51 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             if (!item || isNaN(harga) || harga <= 0) return;
 
-            const now = new Date();
-            const tanggal = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const waktu = now.toTimeString().slice(0, 5);
-
-            if (!db[currentProfile]) db[currentProfile] = [];
-            db[currentProfile].push({
-                tanggal,
-                waktu,
-                item,
-                harga,
-                tipe,
-                dompet: selectedTxWallet
-            });
-
-            saveDB();
-            renderAll();
-
+            const cfg = USERS_CONFIG[currentProfile];
             const cmd = buildBotCommandString();
+            
+            // Tutup modal dan salin command bot ke clipboard
             closeModal('modalTransaction');
-
+            copyTextSilent(cmd);
             if (window.Telegram?.WebApp?.initData) {
                 window.Telegram.WebApp.sendData(cmd);
             }
-            copyTextSilent(cmd);
-            showToast(`Tercatat di ${USERS_CONFIG[currentProfile].sheetTab} & Command disalin!`);
+
+            showToast(`Mengirim ke Google Sheets (${cfg.sheetTab})...`);
+
+            // Siapkan payload data transaksi persis sesuai 6 kolom sheet
+            const payload = {
+                user_id: cfg.telegramId,
+                item: item,
+                harga: harga,
+                tipe: tipe,
+                dompet: selectedTxWallet
+            };
+
+            try {
+                // Tembak langsung ke Google Apps Script via POST
+                if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("MASUKKAN_URL")) {
+                    await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors', // Penting agar tidak terkena blokir CORS Google
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                }
+                
+                showToast(`✅ Berhasil dicatat ke ${cfg.sheetTab}!`);
+                
+                // Beri jeda 1 detik agar Google Sheets selesai menulis baris, lalu reload data asli
+                setTimeout(() => {
+                    fetchRealtimeData(currentProfile);
+                }, 1200);
+
+            } catch (err) {
+                console.error("Gagal mengirim ke Apps Script:", err);
+                showToast(`⚠️ Gagal simpan ke sheet, command disalin manual.`);
+            }
         }
 
         function copyTxCommandOnly() {
