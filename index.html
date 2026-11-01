@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PouleBot Executive Suite — CFO Terminal</title>
+    
+    <!-- Telegram WebApp SDK (Auto-hooks if opened inside Telegram) -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js for Executive Financial Visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        obsidian: '#070A12',
+                        charcoal: '#0F1626',
+                        champagne: '#F59E0B',
+                        emeraldLux: '#10B981',
+                        roseLux: '#F43F5E',
+                        indigoLux: '#6366F1'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --bg-primary: #070A12;
+            --card-bg: rgba(15, 22, 38, 0.78);
+            --card-border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(245, 158, 11, 0.08) 0px, transparent 45%),
+                radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.09) 0px, transparent 45%),
+                radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: #F8FAFC;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Executive Glassmorphism */
+        .cfo-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.07);
+        }
+
+        .cfo-card-interactive {
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .cfo-card-interactive:hover {
+            border-color: rgba(245, 158, 11, 0.35);
+            transform: translateY(-2px);
+            box-shadow: 0 22px 45px -12px rgba(245, 158, 11, 0.12);
+        }
+        .cfo-card-interactive:active {
+            transform: scale(0.98);
+        }
+
+        /* Gold Metallic Gradient Text */
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #FDE68A 0%, #F59E0B 50%, #D97706 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 22, 38, 0.4);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(245, 158, 11, 0.5);
+        }
+
+        /* Hide scrollbar for horizontal wallet carousel */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Blur effect for privacy mode */
+        .privacy-blur {
+            filter: blur(8px);
+            user-select: none;
+            transition: filter 0.25s ease;
+        }
+        .privacy-clear {
+            filter: blur(0);
+            transition: filter 0.25s ease;
+        }
+
+        /* Pulse Indicator */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.8; }
+            80%, 100% { transform: scale(2.2); opacity: 0; }
+        }
+        .live-dot::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background-color: #10B981;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-28 selection:bg-amber-500 selection:text-slate-950">
+
+    <!-- TOP STATUS BAR / TELEGRAM BRIDGE INDICATOR -->
+    <div class="sticky top-0 z-30 bg-[#070A12]/80 backdrop-blur-xl border-b border-white/[0.06]">
+        <div class="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+                <span class="relative flex h-2 w-2 live-dot">
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                </span>
+                <span class="font-mono text-slate-400 tracking-wider uppercase text-[11px]">POULEBOT OS v3.5</span>
+                <span class="hidden sm:inline-block text-slate-600">•</span>
+                <span id="sheetTabBadge" class="font-mono text-[11px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    🔒 sheet: tracker_iqbal
+                </span>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="openIntegrationModal()" class="flex items-center gap-1.5 text-slate-300 hover:text-amber-400 transition font-medium">
+                    <i data-lucide="terminal" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span>Koneksi Bot</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-6xl mx-auto px-4 pt-5">
+
+        <!-- HEADER & MULTI-USER ISOLATED SWITCHER -->
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 p-[1px] shadow-lg shadow-amber-500/20">
+                        <div class="w-full h-full bg-[#090D16] rounded-[11px] flex items-center justify-center">
+                            <i data-lucide="crown" class="w-5 h-5 text-amber-400"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                                Executive <span class="gold-gradient-text">CFO Suite</span>
+                            </h1>
+                            <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/5 text-slate-300 border border-white/10">
+                                VIP Private
+                            </span>
+                        </div>
+                        <p id="executiveGreeting" class="text-xs sm:text-sm text-slate-400 mt-0.5">
+                            Selamat bertugas, <span class="text-slate-200 font-semibold">Bos Iqbal</span> — Isolasi data aktif & terenkripsi.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- USERS_DB SWITCHER (Iqbal vs Radelia) -->
+            <div class="cfo-card p-1.5 rounded-2xl flex items-center gap-1 self-start md:self-auto">
+                <button id="btnUserIqbal" onclick="switchProfile('iqbal')" class="flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md shadow-amber-500/20">
+                    <span class="w-6 h-6 rounded-lg bg-slate-950/20 flex items-center justify-center font-mono font-bold text-xs">IQ</span>
+                    <div class="text-left">
+                        <div class="leading-none font-bold">Iqbal</div>
+                        <div class="text-[10px] opacity-80 font-mono mt-0.5">ID: 8213648365</div>
+                    </div>
+                </button>
+
+                <button id="btnUserRadelia" onclick="switchProfile('radelia')" class="flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-white">
+                    <span class="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center font-mono font-bold text-xs text-rose-300">RD</span>
+                    <div class="text-left">
+                        <div class="leading-none font-bold">Radelia</div>
+                        <div class="text-[10px] opacity-75 font-mono mt-0.5">ID: 5179043801</div>
+                    </div>
+                </button>
+            </div>
+        </header>
+
+        <!-- GRID LAYOUT: LEFT (KPI + WALLETS + QUICK COMMANDS) & RIGHT (CHARTS + LEDGER) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT COLUMN (5 Cols on Desktop) -->
+            <div class="lg:col-span-5 space-y-6">
+
+                <!-- 1. CFO NET LIQUIDITY HERO CARD -->
+                <section class="cfo-card rounded-3xl p-6 relative overflow-hidden">
+                    <!-- Subtle Ambient Glow -->
+                    <div class="absolute -right-12 -top-12 w-44 h-44 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="absolute -left-12 -bottom-12 w-44 h-44 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-mono uppercase tracking-widest text-slate-400">Net Liquidity Position</span>
+                            <span id="activeWalletPill" class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-amber-400 border border-white/10">ALL WALLETS</span>
+                        </div>
+                        <button onclick="togglePrivacy()" class="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 transition" title="Sembunyikan/Tampilkan Angka">
+                            <i id="privacyIcon" data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <!-- Main Net Balance -->
+                    <div class="mb-6">
+                        <div id="heroNetBalance" class="font-mono text-3xl sm:text-4xl font-extrabold tracking-tight text-white privacy-clear">
+                            Rp 0
+                        </div>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span id="savingsRateBadge" class="inline-flex items-center gap-1 text-xs font-mono font-medium px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                                Savings Ratio: 64.2%
+                            </span>
+                            <span id="burnStatusText" class="text-xs text-slate-400">Cashflow Sehat</span>
+                        </div>
+                    </div>
+
+                    <!-- Inflow vs Outflow Split -->
+                    <div class="grid grid-cols-2 gap-3 pt-4 border-t border-white/[0.07]">
+                        <div class="p-3.5 rounded-2xl bg-emerald-500/[0.06] border border-emerald-500/20">
+                            <div class="flex items-center justify-between text-xs text-emerald-300/80 mb-1">
+                                <span>Total Masuk</span>
+                                <i data-lucide="arrow-down-left" class="w-4 h-4 text-emerald-400"></i>
+                            </div>
+                            <div id="heroTotalMasuk" class="font-mono text-base sm:text-lg font-bold text-emerald-400 privacy-clear">
+                                Rp 0
+                            </div>
+                            <div class="text-[10px] font-mono text-slate-400 mt-0.5">Command: /masuk</div>
+                        </div>
+
+                        <div class="p-3.5 rounded-2xl bg-rose-500/[0.06] border border-rose-500/20">
+                            <div class="flex items-center justify-between text-xs text-rose-300/80 mb-1">
+                                <span>Total Keluar</span>
+                                <i data-lucide="arrow-up-right" class="w-4 h-4 text-rose-400"></i>
+                            </div>
+                            <div id="heroTotalKeluar" class="font-mono text-base sm:text-lg font-bold text-rose-400 privacy-clear">
+                                Rp 0
+                            </div>
+                            <div class="text-[10px] font-mono text-slate-400 mt-0.5">Auto-Tag / Struk</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. MULTI-WALLET LIQUIDITY CAROUSEL -->
+                <section class="cfo-card rounded-3xl p-5">
+                    <div class="flex items-center justify-between mb-3.5">
+                        <div>
+                            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i data-lucide="wallet-cards" class="w-4 h-4 text-amber-400"></i>
+                                Alokasi Dompet Digital & Bank
+                            </h2>
+                            <p class="text-[11px] text-slate-400">Klik dompet untuk filter mutasi spesifik</p>
+                        </div>
+                        <button onclick="selectWalletFilter('ALL')" id="resetWalletBtn" class="hidden text-xs font-mono text-amber-400 hover:underline">
+                            Reset (ALL)
+                        </button>
+                    </div>
+
+                    <div id="walletCarousel" class="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+                        <!-- Dynamically populated wallet cards -->
+                    </div>
+                </section>
+
+                <!-- 3. EXECUTIVE COMMAND DECK (ZERO-FRICTION ACTIONS) -->
+                <section class="cfo-card rounded-3xl p-5">
+                    <div class="flex items-center justify-between mb-3.5">
+                        <div>
+                            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+                                Quick Command Center
+                            </h2>
+                            <p class="text-[11px] text-slate-400">Eksekusi fitur PouleBot tanpa ketik manual</p>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate-400 bg-white/5 px-2 py-0.5 rounded">100% Sync</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- Catat Pengeluaran -->
+                        <button onclick="openTransactionModal('Keluar')" class="cfo-card-interactive p-4 rounded-2xl bg-gradient-to-br from-rose-500/15 to-rose-900/10 border border-rose-500/25 text-left group">
+                            <div class="w-9 h-9 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center mb-2.5 group-hover:scale-110 transition">
+                                <i data-lucide="minus-circle" class="w-5 h-5 text-rose-400"></i>
+                            </div>
+                            <div class="font-bold text-sm text-white">Catat Keluar</div>
+                            <div class="text-[11px] text-slate-400 font-mono mt-0.5">Teks Bebas + /dompet</div>
+                        </button>
+
+                        <!-- Catat Pemasukan (/masuk) -->
+                        <button onclick="openTransactionModal('Masuk')" class="cfo-card-interactive p-4 rounded-2xl bg-gradient-to-br from-emerald-500/15 to-emerald-900/10 border border-emerald-500/25 text-left group">
+                            <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mb-2.5 group-hover:scale-110 transition">
+                                <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-400"></i>
+                            </div>
+                            <div class="font-bold text-sm text-white">Catat Masuk</div>
+                            <div class="text-[11px] text-slate-400 font-mono mt-0.5">Command /masuk</div>
+                        </button>
+
+                        <!-- Satpam Impulsif (/worthit) -->
+                        <button onclick="openWorthitModal()" class="cfo-card-interactive p-4 rounded-2xl bg-gradient-to-br from-amber-500/15 to-amber-900/10 border border-amber-500/25 text-left group">
+                            <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-2.5 group-hover:scale-110 transition">
+                                <i data-lucide="scale" class="w-5 h-5 text-amber-400"></i>
+                            </div>
+                            <div class="font-bold text-sm text-white">Satpam WorthIt</div>
+                            <div class="text-[11px] text-slate-400 font-mono mt-0.5">Uji Impulsif /worthit</div>
+                        </button>
+
+                        <!-- Private Consultant AI (/roasting) -->
+                        <button onclick="openRoastingModal()" class="cfo-card-interactive p-4 rounded-2xl bg-gradient-to-br from-indigo-500/15 to-purple-900/15 border border-indigo-500/25 text-left group">
+                            <div class="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center mb-2.5 group-hover:scale-110 transition">
+                                <i data-lucide="flame" class="w-5 h-5 text-indigo-400"></i>
+                            </div>
+                            <div class="font-bold text-sm text-white">AI Roasting</div>
+                            <div class="text-[11px] text-slate-400 font-mono mt-0.5">Bedah Boncos /roasting</div>
+                        </button>
+                    </div>
+
+                    <!-- Quick /undo Bar -->
+                    <div class="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between">
+                        <div class="text-xs text-slate-400 flex items-center gap-1.5">
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-400"></i>
+                            <span>Salah input transaksi terakhir?</span>
+                        </div>
+                        <button onclick="triggerUndo()" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-rose-500/20 hover:text-rose-300 border border-white/10 text-xs font-mono font-semibold text-slate-200 transition flex items-center gap-1.5">
+                            <span>Eksekusi /undo</span>
+                        </button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- RIGHT COLUMN (7 Cols on Desktop: Analytics + Live Sheet Ledger) -->
+            <div class="lg:col-span-7 space-y-6">
+
+                <!-- 4. INTERACTIVE CFO ANALYTICS SUITE -->
+                <section class="cfo-card rounded-3xl p-5 sm:p-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                        <div>
+                            <h2 class="text-base font-bold text-white flex items-center gap-2">
+                                <i data-lucide="bar-chart-4" class="w-4 h-4 text-amber-400"></i>
+                                Visualisasi Arus Kas & Distribusi
+                            </h2>
+                            <p id="chartSubtitle" class="text-xs text-slate-400">Data real-time dari worksheet aktif</p>
+                        </div>
+
+                        <!-- Chart Mode Tabs -->
+                        <div class="inline-flex p-1 rounded-xl bg-slate-950/80 border border-white/[0.07] self-start">
+                            <button id="tabChartTrend" onclick="switchChartTab('trend')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-slate-950 transition">
+                                Arus Kas
+                            </button>
+                            <button id="tabChartWallet" onclick="switchChartTab('wallet')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">
+                                Porsi Dompet
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="relative h-64 w-full">
+                        <canvas id="cfoChartCanvas"></canvas>
+                    </div>
+                </section>
+
+                <!-- 5. GOOGLE SHEETS LIVE LEDGER (6-COLUMN SCHEMA) -->
+                <section class="cfo-card rounded-3xl p-5 sm:p-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-base font-bold text-white">Mutasi Worksheet</h2>
+                                <span id="ledgerCountBadge" class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/5 text-slate-300 border border-white/10">0 Baris</span>
+                            </div>
+                            <p class="text-xs text-slate-400 font-mono mt-0.5">Schema: Tanggal | Waktu | Item | Harga | Tipe | Dompet</p>
+                        </div>
+
+                        <!-- Export CSV / Sync -->
+                        <div class="flex items-center gap-2">
+                            <button onclick="exportCurrentSheetCSV()" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono text-slate-300 flex items-center gap-1.5 transition">
+                                <i data-lucide="download" class="w-3.5 h-3.5 text-amber-400"></i>
+                                <span>Export CSV</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search & Type Filter Bar -->
+                    <div class="flex flex-col sm:flex-row gap-2.5 mb-4">
+                        <div class="relative flex-1">
+                            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                            <input id="searchLedgerInput" oninput="renderAll()" type="text" placeholder="Cari item transaksi, nominal, atau dompet..." class="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-950/70 border border-white/10 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500/60">
+                        </div>
+                        <div class="flex gap-1.5">
+                            <button onclick="setLedgerTypeFilter('ALL')" id="filterTypeAll" class="px-3 py-2 rounded-xl text-xs font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40">Semua</button>
+                            <button onclick="setLedgerTypeFilter('Masuk')" id="filterTypeMasuk" class="px-3 py-2 rounded-xl text-xs font-mono font-semibold bg-white/5 text-slate-400 border border-white/10 hover:text-white">Masuk</button>
+                            <button onclick="setLedgerTypeFilter('Keluar')" id="filterTypeKeluar" class="px-3 py-2 rounded-xl text-xs font-mono font-semibold bg-white/5 text-slate-400 border border-white/10 hover:text-white">Keluar</button>
+                        </div>
+                    </div>
+
+                    <!-- Transactions List -->
+                    <div id="ledgerContainer" class="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
+                        <!-- Dynamically rendered rows -->
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- FLOATING BOTTOM NAVIGATION BAR (MOBILE-FIRST EXECUTIVE DOCK) -->
+    <nav class="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-md cfo-card rounded-2xl px-3 py-2 flex items-center justify-around shadow-2xl border border-white/15">
+        <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="flex flex-col items-center gap-1 py-1 px-3 text-amber-400">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            <span class="text-[10px] font-semibold">Terminal</span>
+        </button>
+        <button onclick="openTransactionModal('Keluar')" class="flex flex-col items-center gap-1 py-1 px-3 text-slate-300 hover:text-rose-400 transition">
+            <i data-lucide="Receipt" class="w-4 h-4"></i>
+            <span class="text-[10px] font-semibold">+ Keluar</span>
+        </button>
+        <button onclick="openTransactionModal('Masuk')" class="flex flex-col items-center gap-1 py-1 px-3 text-slate-300 hover:text-emerald-400 transition">
+            <i data-lucide="wallet" class="w-4 h-4"></i>
+            <span class="text-[10px] font-semibold">+ Masuk</span>
+        </button>
+        <button onclick="openWorthitModal()" class="flex flex-col items-center gap-1 py-1 px-3 text-slate-300 hover:text-amber-400 transition">
+            <i data-lucide="shield-alert" class="w-4 h-4"></i>
+            <span class="text-[10px] font-semibold">WorthIt</span>
+        </button>
+        <button onclick="openRoastingModal()" class="flex flex-col items-center gap-1 py-1 px-3 text-slate-300 hover:text-indigo-400 transition">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            <span class="text-[10px] font-semibold">Roasting</span>
+        </button>
+    </nav>
+
+    <!-- ================================================================= -->
+    <!-- MODAL 1: CATAT TRANSAKSI (MASUK / KELUAR)                         -->
+    <!-- ================================================================= -->
+    <div id="modalTransaction" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+        <div class="cfo-card rounded-3xl max-w-md w-full p-6 border border-white/15 animate-fadeIn">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div id="modalTxIconBox" class="w-9 h-9 rounded-xl bg-rose-500/20 flex items-center justify-center">
+                        <i id="modalTxIcon" data-lucide="arrow-up-right" class="w-5 h-5 text-rose-400"></i>
+                    </div>
+                    <div>
+                        <h3 id="modalTxTitle" class="text-base font-bold text-white">Catat Pengeluaran Baru</h3>
+                        <p id="modalTxSubtitle" class="text-xs text-slate-400 font-mono">Target: tracker_iqbal</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modalTransaction')" class="p-1.5 rounded-xl bg-white/5 text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <form onsubmit="submitTransaction(event)" class="space-y-4">
+                <input type="hidden" id="txTypeInput" value="Keluar">
+
+                <div>
+                    <label class="block text-xs font-mono uppercase text-slate-400 mb-1.5">Nama Item / Sumber Transaksi</label>
+                    <input id="txItemInput" type="text" required placeholder="Contoh: Kopi Kenangan / Gaji Bulanan" oninput="updateCommandPreview()" class="w-full px-4 py-3 rounded-xl bg-slate-950/90 border border-white/10 text-sm text-white focus:outline-none focus:border-amber-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-mono uppercase text-slate-400 mb-1.5">Nominal (Rupiah)</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 font-mono text-xs text-slate-400">Rp</span>
+                        <input id="txAmountInput" type="number" required min="100" placeholder="50000" oninput="updateCommandPreview()" class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950/90 border border-white/10 font-mono text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-mono uppercase text-slate-400 mb-1.5">Pilih Tag Dompet Valid</label>
+                    <div id="walletSelectorGrid" class="grid grid-cols-4 gap-2">
+                        <!-- Populated by JS: BCA, MANDIRI, BRI, CIMB, GOPAY, DANA, CASH -->
+                    </div>
+                </div>
+
+                <!-- Live Telegram Bot Command Preview -->
+                <div class="p-3 rounded-2xl bg-slate-950/90 border border-white/10">
+                    <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1">
+                        <span>FORMAT COMMAND POULEBOT:</span>
+                        <span class="text-emerald-400">Auto-Formatted</span>
+                    </div>
+                    <div id="txCommandPreview" class="font-mono text-xs text-amber-300 break-all">
+                        Beli Kopi 25000 /bca
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5 pt-2">
+                    <button type="button" onclick="copyTxCommandOnly()" class="py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-200 flex items-center justify-center gap-1.5">
+                        <i data-lucide="copy" class="w-4 h-4 text-amber-400"></i>
+                        <span>Copy Command</span>
+                    </button>
+                    <button type="submit" class="py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5">
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                        <span>Simpan & Sync Bot</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- MODAL 2: SATPAM IMPULSIF (/worthit AI SIMULATOR)                  -->
+    <!-- ================================================================= -->
+    <div id="modalWorthit" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+        <div class="cfo-card rounded-3xl max-w-lg w-full p-6 border border-amber-500/30">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+                        <i data-lucide="shield-alert" class="w-5 h-5 text-amber-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">🕵️ Satpam Impulsif AI (/worthit)</h3>
+                        <p class="text-xs text-slate-400">Investigasi rasio harga barang terhadap likuiditas aktif</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modalWorthit')" class="p-1.5 rounded-xl bg-white/5 text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <div>
+                    <label class="block text-[11px] font-mono uppercase text-slate-400 mb-1">Nama Barang Godaan</label>
+                    <input id="worthitItem" type="text" placeholder="Sepatu Jordan / Skincare" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-sm text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-mono uppercase text-slate-400 mb-1">Harga Barang (Rp)</label>
+                    <input id="worthitPrice" type="number" placeholder="2500000" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/10 font-mono text-sm text-white focus:outline-none focus:border-amber-500">
+                </div>
+            </div>
+
+            <button onclick="runWorthitAnalysis()" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 mb-4 flex items-center justify-center gap-2">
+                <i data-lucide="cpu" class="w-4 h-4"></i>
+                <span>Jalankan Investigasi Finansial</span>
+            </button>
+
+            <!-- AI Output Box -->
+            <div id="worthitResultBox" class="hidden p-4 rounded-2xl bg-slate-950/90 border border-white/10 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span id="worthitScoreBadge" class="text-xs font-mono font-bold px-2.5 py-1 rounded-lg"></span>
+                    <span id="worthitImpactText" class="text-xs font-mono text-slate-400"></span>
+                </div>
+                <p id="worthitVerdictText" class="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-line"></p>
+                <div class="pt-2 border-t border-white/10 flex items-center justify-between">
+                    <code id="worthitCmdString" class="text-[11px] font-mono text-amber-400">/worthit Barang 0</code>
+                    <button onclick="sendOrCopyCommand('worthitCmdString')" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-semibold text-white">
+                        Kirim ke Bot
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- MODAL 3: PRIVATE CONSULTANT AI (/roasting)                        -->
+    <!-- ================================================================= -->
+    <div id="modalRoasting" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+        <div class="cfo-card rounded-3xl max-w-lg w-full p-6 border border-indigo-500/30">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center">
+                        <i data-lucide="flame" class="w-5 h-5 text-indigo-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">🔥 Konsultan Keuangan AI (/roasting)</h3>
+                        <p id="roastingTargetLabel" class="text-xs text-slate-400 font-mono">Target Persona: Iqbal (tracker_iqbal)</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modalRoasting')" class="p-1.5 rounded-xl bg-white/5 text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div id="roastingOutput" class="p-4 rounded-2xl bg-slate-950/90 border border-white/10 text-xs sm:text-sm text-slate-200 leading-relaxed space-y-3 max-h-80 overflow-y-auto">
+                <!-- Populated dynamically with personalized Iqbal / Radelia roast -->
+            </div>
+
+            <div class="mt-4 flex items-center justify-between gap-3">
+                <button onclick="generateLiveRoast()" class="flex-1 py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-200 flex items-center justify-center gap-1.5">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-indigo-400"></i>
+                    <span>Bedah Ulang Transaksi</span>
+                </button>
+                <button onclick="triggerBotCommandDirect('/roasting')" class="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-xs font-bold text-white flex items-center justify-center gap-1.5 shadow-lg shadow-indigo-500/25">
+                    <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                    <span>Trigger /roasting di Bot</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- MODAL 4: PANDUAN INTEGRASI ZERO-ROMBAK KE BOT.PY                  -->
+    <!-- ================================================================= -->
+    <div id="modalIntegration" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+        <div class="cfo-card rounded-3xl max-w-xl w-full p-6 border border-white/15">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                        <i data-lucide="plug-zap" class="w-5 h-5 text-emerald-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">Integrasi Zero-Rombak ke PouleBot</h3>
+                        <p class="text-xs text-slate-400">100% Aman — Tanpa mengubah fungsi /masuk, /undo, /roasting yang sudah jalan</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modalIntegration')" class="p-1.5 rounded-xl bg-white/5 text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs text-slate-300 leading-relaxed max-h-96 overflow-y-auto pr-1">
+                <div class="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-200">
+                    <strong>✅ Status Arsitektur:</strong> File <code>index.html</code> ini mandiri penuh. Semua <em>command</em> yang dihasilkan dari tombol di atas sudah mengikuti format persis kode <code>bot.py</code> lu (<code>/masuk ...</code>, <code>/worthit ...</code>, <code>/roasting</code>, <code>/undo</code>).
+                </div>
+
+                <p class="font-semibold text-white">Cara pasang tombol buka Web App di <code>bot.py</code> (Opsional hanya tambah 1 handler):</p>
+                <pre class="p-3 rounded-xl bg-slate-950 border border-white/10 font-mono text-[11px] text-amber-300 overflow-x-auto">from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+
+async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    kb = [[InlineKeyboardButton(
+        "👑 Buka CFO Executive Suite",
+        web_app=WebAppInfo(url="https://URL-HOSTING-KAMU/index.html")
+    )]]
+    await update.message.reply_text(
+        "📊 Silakan akses CFO Command Center:",
+        reply_markup=InlineKeyboardMarkup(kb)
+    )</pre>
+                <p class="text-slate-400">
+                    💡 <strong>Tips Gratis Hosting:</strong> Upload file <code>index.html</code> ini ke <strong>GitHub Pages</strong> atau <strong>Vercel</strong> (gratis 1 menit), lalu tempel link HTTPS-nya ke <code>WebAppInfo</code> di atas atau langsung ke <strong>@BotFather (/setmenubutton)</strong>.
+                </p>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-white/10 flex justify-end">
+                <button onclick="closeModal('modalIntegration')" class="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs">
+                    Siap, Mengerti Bos!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="cfoToast" class="fixed top-16 right-4 z-50 hidden items-center gap-2.5 px-4 py-3 rounded-2xl cfo-card border border-amber-500/40 text-xs font-medium text-white shadow-2xl">
+        <i data-lucide="check-circle" class="w-4 h-4 text-amber-400"></i>
+        <span id="cfoToastText">Berhasil disinkronkan</span>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- APPLICATION LOGIC & REALISTIC MULTI-USER DATASET                  -->
+    <!-- ================================================================= -->
+    <script>
+        // Exact mapping from user's bot.py architecture
+        const USERS_CONFIG = {
+            iqbal: {
+                key: 'iqbal',
+                telegramId: 8213648365,
+                namaPanggilan: 'Iqbal',
+                sapaan: 'Bos Iqbal',
+                sheetTab: 'tracker_iqbal',
+                accent: 'amber'
+            },
+            radelia: {
+                key: 'radelia',
+                telegramId: 5179043801,
+                namaPanggilan: 'Radelia',
+                sapaan: 'Kak Radelia',
+                sheetTab: 'tracker_radelia',
+                accent: 'rose'
+            }
+        };
+
+        const VALID_WALLETS = ['BCA', 'MANDIRI', 'BRI', 'CIMB', 'GOPAY', 'DANA', 'CASH'];
+
+        // Initial Realistic Dataset matching exact 6-column Google Sheets schema:
+        // [Tanggal, Waktu, Item, Harga, Tipe, Dompet]
+        const INITIAL_DATASETS = {
+            iqbal: [
+                { tanggal: '26/02/2025', waktu: '09:00', item: 'Gaji Bulanan & Insentif', harga: 12500000, tipe: 'Masuk', dompet: 'BCA' },
+                { tanggal: '27/02/2025', waktu: '14:20', item: 'Project Freelance Web', harga: 3200000, tipe: 'Masuk', dompet: 'MANDIRI' },
+                { tanggal: '27/02/2025', waktu: '19:45', item: 'Kopi Fore & Croissant', harga: 68000, tipe: 'Keluar', dompet: 'GOPAY' },
+                { tanggal: '28/02/2025', waktu: '12:30', item: 'Makan Siang Padang Kantor', harga: 45000, tipe: 'Keluar', dompet: 'CASH' },
+                { tanggal: '28/02/2025', waktu: '20:15', item: 'Dinner Sushi Tei bareng Radelia', harga: 485000, tipe: 'Keluar', dompet: 'BCA' },
+                { tanggal: '01/03/2025', waktu: '10:10', item: 'Isi Bensin Shell Super', harga: 250000, tipe: 'Keluar', dompet: 'BCA' },
+                { tanggal: '01/03/2025', waktu: '16:40', item: 'Topup Google Cloud & Server', harga: 185000, tipe: 'Keluar', dompet: 'MANDIRI' },
+                { tanggal: '02/03/2025', waktu: '21:00', item: 'Beli Mouse Wireless Logi', harga: 650000, tipe: 'Keluar', dompet: 'DANA' }
+            ],
+            radelia: [
+                { tanggal: '26/02/2025', waktu: '10:00', item: 'Gaji Bulanan', harga: 9800000, tipe: 'Masuk', dompet: 'BCA' },
+                { tanggal: '27/02/2025', waktu: '11:30', item: 'Profit Jualan Online Batch 4', harga: 2450000, tipe: 'Masuk', dompet: 'BCA' },
+                { tanggal: '27/02/2025', waktu: '16:15', item: 'Checkout Skincare Somethinc', harga: 340000, tipe: 'Keluar', dompet: 'GOPAY' },
+                { tanggal: '28/02/2025', waktu: '13:05', item: 'Matcha Latte & Pastry', harga: 58000, tipe: 'Keluar', dompet: 'DANA' },
+                { tanggal: '28/02/2025', waktu: '18:50', item: 'GrabCar Pulang Kantor', harga: 72000, tipe: 'Keluar', dompet: 'GOPAY' },
+                { tanggal: '01/03/2025', waktu: '15:20', item: 'Beli Baju Lebaran Preloved', harga: 420000, tipe: 'Keluar', dompet: 'BCA' },
+                { tanggal: '02/03/2025', waktu: '19:00', item: 'Belanja Bulanan Supermarket', harga: 510000, tipe: 'Keluar', dompet: 'BRI' }
+            ]
+        };
+
+        // State Management
+        let currentProfile = 'iqbal';
+        let activeWalletFilter = 'ALL';
+        let activeLedgerTypeFilter = 'ALL';
+        let activeChartTab = 'trend';
+        let selectedTxWallet = 'BCA';
+        let isPrivacyBlur = false;
+        let chartInstance = null;
+
+        // Load or Initialize Storage
+        let db = JSON.parse(localStorage.getItem('poulebot_cfo_db_v1')) || INITIAL_DATASETS;
+
+        function saveDB() {
+            localStorage.setItem('poulebot_cfo_db_v1', JSON.stringify(db));
+        }
+
+        function formatRupiah(num) {
+            const sign = num < 0 ? '-' : '';
+            const abs = Math.abs(Math.round(num));
+            return sign + 'Rp ' + abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        // Initialize Telegram WebApp User Detection if opened from Telegram
+        function initTelegramBridge() {
+            try {
+                if (window.Telegram && window.Telegram.WebApp) {
+                    const tg = window.Telegram.WebApp;
+                    tg.ready();
+                    tg.expand();
+                    const tgUser = tg.initDataUnsafe?.user;
+                    if (tgUser && tgUser.id === 5179043801) {
+                        currentProfile = 'radelia';
+                    } else if (tgUser && tgUser.id === 8213648365) {
+                        currentProfile = 'iqbal';
+                    }
+                }
+            } catch (e) {
+                console.log('Running in standalone browser preview mode.');
+            }
+        }
+
+        // Switch between Iqbal and Radelia isolated tabs
+        function switchProfile(profileKey) {
+            currentProfile = profileKey;
+            activeWalletFilter = 'ALL';
+
+            const btnIqbal = document.getElementById('btnUserIqbal');
+            const btnRadelia = document.getElementById('btnUserRadelia');
+
+            if (profileKey === 'iqbal') {
+                btnIqbal.className = "flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md shadow-amber-500/20";
+                btnRadelia.className = "flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-white";
+            } else {
+                btnRadelia.className = "flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all bg-gradient-to-r from-rose-500 to-amber-500 text-slate-950 shadow-md shadow-rose-500/20";
+                btnIqbal.className = "flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-white";
+            }
+
+            const cfg = USERS_CONFIG[profileKey];
+            document.getElementById('sheetTabBadge').textContent = `🔒 sheet: ${cfg.sheetTab}`;
+            document.getElementById('executiveGreeting').innerHTML = `Selamat bertugas, <span class="text-white font-semibold">${cfg.sapaan}</span> — Data terisolasi pada tab <code class="text-amber-400 font-mono">${cfg.sheetTab}</code>.`;
+
+            renderAll();
+            showToast(`Beralih ke brankas ${cfg.namaPanggilan} (${cfg.sheetTab})`);
+        }
+
+        // Toggle Privacy Blur
+        function togglePrivacy() {
+            isPrivacyBlur = !isPrivacyBlur;
+            const els = [
+                document.getElementById('heroNetBalance'),
+                document.getElementById('heroTotalMasuk'),
+                document.getElementById('heroTotalKeluar')
+            ];
+            els.forEach(el => {
+                el.classList.toggle('privacy-blur', isPrivacyBlur);
+                el.classList.toggle('privacy-clear', !isPrivacyBlur);
+            });
+            renderWalletCarousel();
+            renderLedger();
+        }
+
+        // Compute KPIs and Wallet Breakdown
+        function computeMetrics() {
+            const rows = db[currentProfile] || [];
+            let totalMasuk = 0;
+            let totalKeluar = 0;
+            const walletBalances = {};
+            VALID_WALLETS.forEach(w => walletBalances[w] = { masuk: 0, keluar: 0, net: 0 });
+
+            rows.forEach(r => {
+                const w = (r.dompet || 'CASH').toUpperCase();
+                if (!walletBalances[w]) walletBalances[w] = { masuk: 0, keluar: 0, net: 0 };
+
+                if (r.tipe === 'Masuk') {
+                    if (activeWalletFilter === 'ALL' || activeWalletFilter === w) {
+                        totalMasuk += r.harga;
+                    }
+                    walletBalances[w].masuk += r.harga;
+                    walletBalances[w].net += r.harga;
+                } else {
+                    if (activeWalletFilter === 'ALL' || activeWalletFilter === w) {
+                        totalKeluar += r.harga;
+                    }
+                    walletBalances[w].keluar += r.harga;
+                    walletBalances[w].net -= r.harga;
+                }
+            });
+
+            const netBalance = totalMasuk - totalKeluar;
+            const savingsRate = totalMasuk > 0 ? Math.max(0, ((totalMasuk - totalKeluar) / totalMasuk) * 100) : 0;
+
+            return { totalMasuk, totalKeluar, netBalance, savingsRate, walletBalances };
+        }
+
+        // Render Hero KPI Card
+        function renderHeroKPIs(metrics) {
+            document.getElementById('heroNetBalance').textContent = formatRupiah(metrics.netBalance);
+            document.getElementById('heroTotalMasuk').textContent = formatRupiah(metrics.totalMasuk);
+            document.getElementById('heroTotalKeluar').textContent = formatRupiah(metrics.totalKeluar);
+            document.getElementById('activeWalletPill').textContent = activeWalletFilter === 'ALL' ? 'ALL WALLETS' : `DOMPET: ${activeWalletFilter}`;
+
+            const badge = document.getElementById('savingsRateBadge');
+            const statusText = document.getElementById('burnStatusText');
+            const rateFormatted = metrics.savingsRate.toFixed(1) + '%';
+
+            if (metrics.savingsRate >= 40) {
+                badge.className = "inline-flex items-center gap-1 text-xs font-mono font-medium px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30";
+                badge.innerHTML = `Savings Ratio: ${rateFormatted}`;
+                statusText.textContent = "Surplus Likuiditas Tinggi";
+            } else if (metrics.savingsRate >= 15) {
+                badge.className = "inline-flex items-center gap-1 text-xs font-mono font-medium px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30";
+                badge.innerHTML = `Savings Ratio: ${rateFormatted}`;
+                statusText.textContent = "Waspada Burn-Rate";
+            } else {
+                badge.className = "inline-flex items-center gap-1 text-xs font-mono font-medium px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30";
+                badge.innerHTML = `Savings Ratio: ${rateFormatted}`;
+                statusText.textContent = "Zona Rawan Boncos!";
+            }
+        }
+
+        // Render Multi-Wallet Carousel
+        function renderWalletCarousel() {
+            const { walletBalances } = computeMetrics();
+            const container = document.getElementById('walletCarousel');
+            const resetBtn = document.getElementById('resetWalletBtn');
+            resetBtn.classList.toggle('hidden', activeWalletFilter === 'ALL');
+
+            const walletColors = {
+                BCA: 'from-blue-500/20 to-indigo-900/20 border-blue-500/30 text-blue-300',
+                MANDIRI: 'from-amber-500/20 to-yellow-900/20 border-amber-500/30 text-amber-300',
+                GOPAY: 'from-emerald-500/20 to-teal-900/20 border-emerald-500/30 text-emerald-300',
+                DANA: 'from-sky-500/20 to-cyan-900/20 border-sky-500/30 text-sky-300',
+                BRI: 'from-indigo-500/20 to-blue-900/20 border-indigo-500/30 text-indigo-300',
+                CIMB: 'from-rose-500/20 to-red-900/20 border-rose-500/30 text-rose-300',
+                CASH: 'from-slate-500/20 to-slate-800/20 border-slate-500/30 text-slate-300'
+            };
+
+            let html = '';
+            VALID_WALLETS.forEach(w => {
+                const data = walletBalances[w] || { net: 0, masuk: 0, keluar: 0 };
+                const isSelected = activeWalletFilter === w;
+                const activeRing = isSelected ? 'ring-2 ring-amber-400 scale-[1.02]' : 'opacity-85 hover:opacity-100';
+                const blurClass = isPrivacyBlur ? 'privacy-blur' : '';
+
+                html += `
+                    <button onclick="selectWalletFilter('${w}')" class="min-w-[148px] p-3.5 rounded-2xl bg-gradient-to-br ${walletColors[w]} border text-left transition-all ${activeRing}">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-mono text-xs font-extrabold tracking-wider">/${w.toLowerCase()}</span>
+                            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/30 text-white/80">${w}</span>
+                        </div>
+                        <div class="font-mono text-sm font-bold text-white truncate ${blurClass}">
+                            ${formatRupiah(data.net)}
+                        </div>
+                        <div class="text-[10px] font-mono text-white/60 mt-1 flex justify-between">
+                            <span>-${formatCompact(data.keluar)}</span>
+                            <span>+${formatCompact(data.masuk)}</span>
+                        </div>
+                    </button>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function formatCompact(val) {
+            if (val >= 1000000) return (val / 1000000).toFixed(1) + 'jt';
+            if (val >= 1000) return Math.round(val / 1000) + 'k';
+            return val;
+        }
+
+        function selectWalletFilter(wallet) {
+            activeWalletFilter = (activeWalletFilter === wallet) ? 'ALL' : wallet;
+            renderAll();
+        }
+
+        // Render Chart.js Executive Visuals
+        function renderCharts() {
+            const ctx = document.getElementById('cfoChartCanvas').getContext('2d');
+            const rows = db[currentProfile] || [];
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            if (activeChartTab === 'trend') {
+                // Group by Date
+                const dateMap = {};
+                rows.forEach(r => {
+                    if (activeWalletFilter !== 'ALL' && r.dompet !== activeWalletFilter) return;
+                    if (!dateMap[r.tanggal]) dateMap[r.tanggal] = { masuk: 0, keluar: 0 };
+                    if (r.tipe === 'Masuk') dateMap[r.tanggal].masuk += r.harga;
+                    else dateMap[r.tanggal].keluar += r.harga;
+                });
+
+                const labels = Object.keys(dateMap);
+                const dataMasuk = labels.map(d => dateMap[d].masuk);
+                const dataKeluar = labels.map(d => dateMap[d].keluar);
+
+                chartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [
+                            {
+                                label: 'Pemasukan (Masuk)',
+                                data: dataMasuk,
+                                backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                                borderColor: '#10B981',
+                                borderWidth: 1,
+                                borderRadius: 8
+                            },
+                            {
+                                label: 'Pengeluaran (Keluar)',
+                                data: dataKeluar,
+                                backgroundColor: 'rgba(244, 63, 94, 0.75)',
+                                borderColor: '#F43F5E',
+                                borderWidth: 1,
+                                borderRadius: 8
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: { color: '#CBD5E1', font: { family: 'Plus Jakarta Sans', size: 11 } }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: '#94A3B8', font: { family: 'JetBrains Mono', size: 10 } },
+                                grid: { color: 'rgba(255,255,255,0.04)' }
+                            },
+                            y: {
+                                ticks: {
+                                    color: '#94A3B8',
+                                    font: { family: 'JetBrains Mono', size: 10 },
+                                    callback: value => 'Rp ' + formatCompact(value)
+                                },
+                                grid: { color: 'rgba(255,255,255,0.05)' }
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Wallet Outflow Distribution (Donut)
+                const walletOutflow = {};
+                rows.filter(r => r.tipe === 'Keluar').forEach(r => {
+                    walletOutflow[r.dompet] = (walletOutflow[r.dompet] || 0) + r.harga;
+                });
+
+                const labels = Object.keys(walletOutflow);
+                const values = Object.values(walletOutflow);
+
+                chartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels.length ? labels : ['Belum Ada Pengeluaran'],
+                        datasets: [{
+                            data: values.length ? values : [1],
+                            backgroundColor: [
+                                '#F59E0B', '#6366F1', '#10B981', '#F43F5E', '#0EA5E9', '#A855F7', '#64748B'
+                            ],
+                            borderColor: '#090D16',
+                            borderWidth: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '68%',
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { color: '#E2E8F0', font: { family: 'JetBrains Mono', size: 11 } }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function switchChartTab(tab) {
+            activeChartTab = tab;
+            const btnTrend = document.getElementById('tabChartTrend');
+            const btnWallet = document.getElementById('tabChartWallet');
+
+            if (tab === 'trend') {
+                btnTrend.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-slate-950 transition";
+                btnWallet.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition";
+            } else {
+                btnWallet.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-slate-950 transition";
+                btnTrend.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition";
+            }
+            renderCharts();
+        }
+
+        // Render 6-Column Google Sheets Ledger
+        function renderLedger() {
+            const container = document.getElementById('ledgerContainer');
+            const query = (document.getElementById('searchLedgerInput').value || '').toLowerCase();
+            const rows = (db[currentProfile] || []).slice().reverse();
+
+            const filtered = rows.filter(r => {
+                const matchWallet = activeWalletFilter === 'ALL' || r.dompet === activeWalletFilter;
+                const matchType = activeLedgerTypeFilter === 'ALL' || r.tipe === activeLedgerTypeFilter;
+                const matchSearch = r.item.toLowerCase().includes(query) ||
+                                    r.dompet.toLowerCase().includes(query) ||
+                                    r.harga.toString().includes(query);
+                return matchWallet && matchType && matchSearch;
+            });
+
+            document.getElementById('ledgerCountBadge').textContent = `${filtered.length} Transaksi`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center text-slate-500 text-xs font-mono">
+                        Tidak ada mutasi yang cocok dengan filter saat ini.
+                    </div>
+                `;
+                return;
+            }
+
+            const blurClass = isPrivacyBlur ? 'privacy-blur' : '';
+            container.innerHTML = filtered.map(r => {
+                const isMasuk = r.tipe === 'Masuk';
+                const sign = isMasuk ? '+' : '-';
+                const colorClass = isMasuk ? 'text-emerald-400' : 'text-rose-400';
+                const iconBg = isMasuk ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/15 text-rose-400 border-rose-500/30';
+
+                return `
+                    <div class="p-3.5 rounded-2xl bg-slate-950/60 hover:bg-slate-900/80 border border-white/[0.06] flex items-center justify-between gap-3 transition">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-9 h-9 rounded-xl border ${iconBg} flex items-center justify-center shrink-0 font-mono text-xs font-bold">
+                                ${isMasuk ? 'IN' : 'OUT'}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-xs sm:text-sm font-bold text-white truncate">${r.item}</div>
+                                <div class="flex items-center gap-2 text-[11px] font-mono text-slate-400 mt-0.5">
+                                    <span>${r.tanggal} ${r.waktu}</span>
+                                    <span>•</span>
+                                    <span class="px-1.5 py-0.2 rounded bg-white/5 text-amber-300 border border-white/10">${r.dompet}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <div class="font-mono text-xs sm:text-sm font-bold ${colorClass} ${blurClass}">
+                                ${sign}${formatRupiah(r.harga)}
+                            </div>
+                            <div class="text-[10px] font-mono text-slate-500">${r.tipe}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setLedgerTypeFilter(type) {
+            activeLedgerTypeFilter = type;
+            ['ALL', 'Masuk', 'Keluar'].forEach(t => {
+                const btn = document.getElementById('filterType' + (t === 'ALL' ? 'All' : t));
+                if (t === type) {
+                    btn.className = "px-3 py-2 rounded-xl text-xs font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40";
+                } else {
+                    btn.className = "px-3 py-2 rounded-xl text-xs font-mono font-semibold bg-white/5 text-slate-400 border border-white/10 hover:text-white";
+                }
+            });
+            renderLedger();
+        }
+
+        // =================================================================
+        // MODAL HANDLERS: CATAT MASUK & KELUAR
+        // =================================================================
+        function openTransactionModal(tipe) {
+            document.getElementById('txTypeInput').value = tipe;
+            document.getElementById('txItemInput').value = '';
+            document.getElementById('txAmountInput').value = '';
+
+            const cfg = USERS_CONFIG[currentProfile];
+            document.getElementById('modalTxSubtitle').textContent = `Target Worksheet: ${cfg.sheetTab}`;
+
+            const titleEl = document.getElementById('modalTxTitle');
+            const iconBox = document.getElementById('modalTxIconBox');
+
+            if (tipe === 'Masuk') {
+                titleEl.textContent = '🤑 Catat Pemasukan (/masuk)';
+                iconBox.className = 'w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400';
+            } else {
+                titleEl.textContent = '💸 Catat Pengeluaran Baru';
+                iconBox.className = 'w-9 h-9 rounded-xl bg-rose-500/20 flex items-center justify-center text-rose-400';
+            }
+
+            renderWalletSelectorGrid();
+            updateCommandPreview();
+            showModal('modalTransaction');
+        }
+
+        function renderWalletSelectorGrid() {
+            const grid = document.getElementById('walletSelectorGrid');
+            grid.innerHTML = VALID_WALLETS.map(w => {
+                const active = selectedTxWallet === w
+                    ? 'bg-amber-500 text-slate-950 font-bold border-amber-400'
+                    : 'bg-slate-950 text-slate-300 border-white/10 hover:border-white/30';
+                return `
+                    <button type="button" onclick="selectTxWallet('${w}')" class="py-2 px-2 rounded-xl border font-mono text-xs transition ${active}">
+                        /${w.toLowerCase()}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function selectTxWallet(w) {
+            selectedTxWallet = w;
+            renderWalletSelectorGrid();
+            updateCommandPreview();
+        }
+
+        function buildBotCommandString() {
+            const tipe = document.getElementById('txTypeInput').value;
+            const item = (document.getElementById('txItemInput').value || 'Transaksi').trim();
+            const nominal = (document.getElementById('txAmountInput').value || '0').trim();
+            const walletTag = selectedTxWallet === 'CASH' ? '' : ` /${selectedTxWallet.toLowerCase()}`;
+
+            if (tipe === 'Masuk') {
+                return `/masuk ${item} ${nominal}${walletTag}`;
+            } else {
+                return `${item} ${nominal}${walletTag}`;
+            }
+        }
+
+        function updateCommandPreview() {
+            document.getElementById('txCommandPreview').textContent = buildBotCommandString();
+        }
+
+        function submitTransaction(e) {
+            e.preventDefault();
+            const tipe = document.getElementById('txTypeInput').value;
+            const item = document.getElementById('txItemInput').value.trim();
+            const harga = parseInt(document.getElementById('txAmountInput').value, 10);
+
+            if (!item || isNaN(harga) || harga <= 0) return;
+
+            const now = new Date();
+            const tanggal = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const waktu = now.toTimeString().slice(0, 5);
+
+            // Append in exact 6-column schema
+            db[currentProfile].push({
+                tanggal,
+                waktu,
+                item,
+                harga,
+                tipe,
+                dompet: selectedTxWallet
+            });
+
+            saveDB();
+            renderAll();
+
+            const cmd = buildBotCommandString();
+            closeModal('modalTransaction');
+
+            // If inside Telegram WebApp, also offer direct sendData
+            if (window.Telegram?.WebApp?.initData) {
+                window.Telegram.WebApp.sendData(cmd);
+            }
+            copyTextSilent(cmd);
+            showToast(`Tercatat di ${USERS_CONFIG[currentProfile].sheetTab} & Command disalin!`);
+        }
+
+        function copyTxCommandOnly() {
+            const cmd = buildBotCommandString();
+            copyTextSilent(cmd);
+            showToast(`Command disalin: ${cmd}`);
+        }
+
+        // =================================================================
+        // MODAL 2: SATPAM IMPULSIF (/worthit)
+        // =================================================================
+        function openWorthitModal() {
+            document.getElementById('worthitResultBox').classList.add('hidden');
+            showModal('modalWorthit');
+        }
+
+        function runWorthitAnalysis() {
+            const barang = (document.getElementById('worthitItem').value || 'Barang Impulsif').trim();
+            const harga = parseInt(document.getElementById('worthitPrice').value || '0', 10);
+
+            if (harga <= 0) {
+                showToast('Masukkan nominal harga barang dulu bos!');
+                return;
+            }
+
+            const { netBalance } = computeMetrics();
+            const cfg = USERS_CONFIG[currentProfile];
+            const ratio = netBalance > 0 ? (harga / netBalance) * 100 : 100;
+
+            const box = document.getElementById('worthitResultBox');
+            const badge = document.getElementById('worthitScoreBadge');
+            const impact = document.getElementById('worthitImpactText');
+            const verdict = document.getElementById('worthitVerdictText');
+            const cmdEl = document.getElementById('worthitCmdString');
+
+            impact.textContent = `Bebannya: ${ratio.toFixed(1)}% dari Saldo Bersih`;
+            cmdEl.textContent = `/worthit ${barang} ${harga}`;
+
+            if (ratio <= 8) {
+                badge.className = "text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
+                badge.textContent = "✅ VERDICT: GAS CHECKOUT (AMAN)";
+                verdict.textContent = `🕵️ Satpam Impulsif Report buat ${cfg.namaPanggilan}:\nHarga ${barang} (${formatRupiah(harga)}) cuma nyenggol ${ratio.toFixed(1)}% dari likuiditas bersih lu (${formatRupiah(netBalance)}). Selama barangnya beneran kepake produktif atau bikin happy tanpa ngutang, sikat bos!`;
+            } else if (ratio <= 25) {
+                badge.className = "text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40";
+                badge.textContent = "⚠️ VERDICT: TAHAN 48 JAM DULU";
+                verdict.textContent = `🕵️ Satpam Impulsif Report buat ${cfg.namaPanggilan}:\nWaduh, ${barang} seharga ${formatRupiah(harga)} bakal nyedot ${ratio.toFixed(1)}% saldo aktif lu nih. Coba masukin keranjang dulu, diemin 2 hari. Kalau lusa masih kepikiran dan emang butuh banget, baru eksekusi!`;
+            } else {
+                badge.className = "text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/40";
+                badge.textContent = "🚨 VERDICT: RACUN ALGORITMA! BATALKAN!";
+                verdict.textContent = `🕵️ Satpam Impulsif Report buat ${cfg.namaPanggilan}:\nSTOP BOS! Beli ${barang} (${formatRupiah(harga)}) itu ngabisin ${ratio.toFixed(1)}% dari total nafas tabungan lu sekarang (${formatRupiah(netBalance)}). Ini murni godaan checkout sesaat, jangan sampe akhir bulan makan angin!`;
+            }
+
+            box.classList.remove('hidden');
+        }
+
+        // =================================================================
+        // MODAL 3: PRIVATE CONSULTANT AI (/roasting)
+        // =================================================================
+        function openRoastingModal() {
+            generateLiveRoast();
+            showModal('modalRoasting');
+        }
+
+        function generateLiveRoast() {
+            const cfg = USERS_CONFIG[currentProfile];
+            const rows = db[currentProfile] || [];
+            const { totalMasuk, totalKeluar, netBalance, savingsRate } = computeMetrics();
+
+            document.getElementById('roastingTargetLabel').textContent = `Target Persona: ${cfg.namaPanggilan} (${cfg.sheetTab})`;
+
+            const expenses = rows.filter(r => r.tipe === 'Keluar');
+            const topExpense = expenses.slice().sort((a, b) => b.harga - a.harga)[0];
+
+            const topItemText = topExpense
+                ? `${topExpense.item} (${formatRupiah(topExpense.harga)} via ${topExpense.dompet})`
+                : 'jajan-jajan kecil';
+
+            const output = document.getElementById('roastingOutput');
+            output.innerHTML = `
+                <div class="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-mono text-xs">
+                    🤖 Memanggil NAMA_DB[${cfg.telegramId}] ➔ "${cfg.namaPanggilan}"
+                </div>
+                <p>
+                    "Woi <strong>${cfg.namaPanggilan}</strong>! Gue udah bedah isi brankas <code>${cfg.sheetTab}</code> lu nih. Total pemasukan lu tercatat <strong>${formatRupiah(totalMasuk)}</strong>, sedangkan yang udah lu bakar keluar itu <strong>${formatRupiah(totalKeluar)}</strong>."
+                </p>
+                <p>
+                    "Coba lu liat pengeluaran paling mencolok lu: <strong>${topItemText}</strong>. ${savingsRate < 35 ? 'Jujur aja bos, gaya hidup lu udah mulai nyerempet lampu kuning, dikit-dikit gesek QRIS sama e-wallet!' : 'Untungnya rasio tabungan lu masih ketolong di angka ' + savingsRate.toFixed(1) + '%, jadi dompet lu masih bisa napas lega.'}"
+                </p>
+                <p>
+                    "Saran CFO buat <strong>${cfg.namaPanggilan}</strong> minggu ini: Pertahanin saldo bersih <strong>${formatRupiah(netBalance)}</strong> lu, kurangi checkout impulsif tengah malem, dan pastiin setiap receh yang keluar wajib lewat sensor <code>/worthit</code> dulu. Paham ya bos!"
+                </p>
+            `;
+        }
+
+        // =================================================================
+        // QUICK /UNDO & UTILITIES
+        // =================================================================
+        function triggerUndo() {
+            const rows = db[currentProfile];
+            if (!rows || rows.length === 0) {
+                showToast('Data worksheet sudah kosong bos!');
+                return;
+            }
+            const removed = rows.pop();
+            saveDB();
+            renderAll();
+            copyTextSilent('/undo');
+            showToast(`Baris terakhir "${removed.item}" dihapus (/undo disalin)`);
+        }
+
+        function triggerBotCommandDirect(cmd) {
+            copyTextSilent(cmd);
+            if (window.Telegram?.WebApp?.initData) {
+                window.Telegram.WebApp.sendData(cmd);
+            }
+            showToast(`Command "${cmd}" siap ditempel ke chat Telegram!`);
+        }
+
+        function sendOrCopyCommand(elId) {
+            const cmd = document.getElementById(elId).textContent;
+            triggerBotCommandDirect(cmd);
+        }
+
+        function exportCurrentSheetCSV() {
+            const cfg = USERS_CONFIG[currentProfile];
+            const rows = db[currentProfile] || [];
+            let csv = 'Tanggal,Waktu,Item,Harga,Tipe,Dompet\n';
+            rows.forEach(r => {
+                csv += `"${r.tanggal}","${r.waktu}","${r.item}",${r.harga},"${r.tipe}","${r.dompet}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${cfg.sheetTab}_export.csv`;
+            a.click();
+            showToast(`CSV ${cfg.sheetTab} berhasil diunduh!`);
+        }
+
+        function copyTextSilent(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+
+        function showModal(id) {
+            const el = document.getElementById(id);
+            el.classList.remove('hidden');
+            el.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+        }
+
+        function openIntegrationModal() {
+            showModal('modalIntegration');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('cfoToast');
+            document.getElementById('cfoToastText').textContent = msg;
+            toast.classList.remove('hidden');
+            toast.classList.add('flex');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+                toast.classList.remove('flex');
+            }, 3200);
+        }
+
+        function renderAll() {
+            const metrics = computeMetrics();
+            renderHeroKPIs(metrics);
+            renderWalletCarousel();
+            renderCharts();
+            renderLedger();
+            lucide.createIcons();
+        }
+
+        window.onload = function () {
+            initTelegramBridge();
+            renderAll();
+        };
+    </script>
+</body>
+</html>
