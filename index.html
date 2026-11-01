@@ -675,6 +675,9 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     <!-- APPLICATION LOGIC & REALISTIC MULTI-USER DATASET                  -->
     <!-- ================================================================= -->
     <script>
+        // MASUKKAN URL GOOGLE APPS SCRIPT BERAKHIRAN /exec DI SINI
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyL94QvPPBECK_YYkKo08mMgpD4oLJKqu9-HXxkPN0NxgtCnUQTEdm-mLutlM4AHbWS/exec";
+
         // Exact mapping from user's bot.py architecture
         const USERS_CONFIG = {
             iqbal: {
@@ -697,28 +700,10 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         const VALID_WALLETS = ['BCA', 'MANDIRI', 'BRI', 'CIMB', 'GOPAY', 'DANA', 'CASH'];
 
-        // Initial Realistic Dataset matching exact 6-column Google Sheets schema:
-        // [Tanggal, Waktu, Item, Harga, Tipe, Dompet]
+        // Fallback Initial Dataset (hanya dipakai jika offline / Apps Script belum diconnect)
         const INITIAL_DATASETS = {
-            iqbal: [
-                { tanggal: '26/02/2025', waktu: '09:00', item: 'Gaji Bulanan & Insentif', harga: 12500000, tipe: 'Masuk', dompet: 'BCA' },
-                { tanggal: '27/02/2025', waktu: '14:20', item: 'Project Freelance Web', harga: 3200000, tipe: 'Masuk', dompet: 'MANDIRI' },
-                { tanggal: '27/02/2025', waktu: '19:45', item: 'Kopi Fore & Croissant', harga: 68000, tipe: 'Keluar', dompet: 'GOPAY' },
-                { tanggal: '28/02/2025', waktu: '12:30', item: 'Makan Siang Padang Kantor', harga: 45000, tipe: 'Keluar', dompet: 'CASH' },
-                { tanggal: '28/02/2025', waktu: '20:15', item: 'Dinner Sushi Tei bareng Radelia', harga: 485000, tipe: 'Keluar', dompet: 'BCA' },
-                { tanggal: '01/03/2025', waktu: '10:10', item: 'Isi Bensin Shell Super', harga: 250000, tipe: 'Keluar', dompet: 'BCA' },
-                { tanggal: '01/03/2025', waktu: '16:40', item: 'Topup Google Cloud & Server', harga: 185000, tipe: 'Keluar', dompet: 'MANDIRI' },
-                { tanggal: '02/03/2025', waktu: '21:00', item: 'Beli Mouse Wireless Logi', harga: 650000, tipe: 'Keluar', dompet: 'DANA' }
-            ],
-            radelia: [
-                { tanggal: '26/02/2025', waktu: '10:00', item: 'Gaji Bulanan', harga: 9800000, tipe: 'Masuk', dompet: 'BCA' },
-                { tanggal: '27/02/2025', waktu: '11:30', item: 'Profit Jualan Online Batch 4', harga: 2450000, tipe: 'Masuk', dompet: 'BCA' },
-                { tanggal: '27/02/2025', waktu: '16:15', item: 'Checkout Skincare Somethinc', harga: 340000, tipe: 'Keluar', dompet: 'GOPAY' },
-                { tanggal: '28/02/2025', waktu: '13:05', item: 'Matcha Latte & Pastry', harga: 58000, tipe: 'Keluar', dompet: 'DANA' },
-                { tanggal: '28/02/2025', waktu: '18:50', item: 'GrabCar Pulang Kantor', harga: 72000, tipe: 'Keluar', dompet: 'GOPAY' },
-                { tanggal: '01/03/2025', waktu: '15:20', item: 'Beli Baju Lebaran Preloved', harga: 420000, tipe: 'Keluar', dompet: 'BCA' },
-                { tanggal: '02/03/2025', waktu: '19:00', item: 'Belanja Bulanan Supermarket', harga: 510000, tipe: 'Keluar', dompet: 'BRI' }
-            ]
+            iqbal: [],
+            radelia: []
         };
 
         // State Management
@@ -729,6 +714,7 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         let selectedTxWallet = 'BCA';
         let isPrivacyBlur = false;
         let chartInstance = null;
+        let isFetchingSheet = false;
 
         // Load or Initialize Storage
         let db = JSON.parse(localStorage.getItem('poulebot_cfo_db_v1')) || INITIAL_DATASETS;
@@ -743,7 +729,7 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return sign + 'Rp ' + abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
         }
 
-        // Initialize Telegram WebApp User Detection if opened from Telegram
+        // Initialize Telegram WebApp User Detection
         function initTelegramBridge() {
             try {
                 if (window.Telegram && window.Telegram.WebApp) {
@@ -751,14 +737,58 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     tg.ready();
                     tg.expand();
                     const tgUser = tg.initDataUnsafe?.user;
-                    if (tgUser && tgUser.id === 5179043801) {
+                    if (tgUser && String(tgUser.id) === "5179043801") {
                         currentProfile = 'radelia';
-                    } else if (tgUser && tgUser.id === 8213648365) {
+                    } else if (tgUser && String(tgUser.id) === "8213648365") {
                         currentProfile = 'iqbal';
                     }
                 }
             } catch (e) {
                 console.log('Running in standalone browser preview mode.');
+            }
+        }
+
+        // Penarik Data Real-Time Langsung dari Tab Google Sheets via Apps Script
+        async function fetchRealtimeData(profileKey = currentProfile) {
+            if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("MASUKKAN_URL")) {
+                console.log("Apps Script URL belum diisi. Menggunakan data lokal/cache.");
+                return;
+            }
+
+            const cfg = USERS_CONFIG[profileKey];
+            const badgeEl = document.getElementById('sheetTabBadge');
+            const originalBadgeText = `🔒 sheet: ${cfg.sheetTab}`;
+            
+            if (badgeEl) badgeEl.textContent = `⏳ Syncing ${cfg.sheetTab}...`;
+            isFetchingSheet = true;
+
+            try {
+                const response = await fetch(`${APPS_SCRIPT_URL}?user_id=${cfg.telegramId}`);
+                const resData = await response.json();
+
+                if (resData.status === "success" && Array.isArray(resData.data)) {
+                    // Petakan format baris spreadsheet ke struktur data dashboard
+                    const parsedRows = resData.data.map(r => ({
+                        tanggal: r.tanggal || '',
+                        waktu: r.waktu || '',
+                        item: r.item || 'Transaksi',
+                        harga: Number(r.harga) || 0,
+                        tipe: r.tipe || 'Keluar',
+                        dompet: (r.dompet || 'CASH').replace('/', '').toUpperCase()
+                    }));
+
+                    db[profileKey] = parsedRows;
+                    saveDB();
+                    renderAll();
+                    showToast(`Data ${cfg.sheetTab} tersinkronisasi (${parsedRows.length} transaksi)`);
+                } else {
+                    console.error("Gagal menarik data:", resData.message);
+                }
+            } catch (err) {
+                console.error("Error koneksi Apps Script:", err);
+            } finally {
+                isFetchingSheet = false;
+                if (badgeEl) badgeEl.textContent = originalBadgeText;
             }
         }
 
@@ -783,7 +813,7 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
             document.getElementById('executiveGreeting').innerHTML = `Selamat bertugas, <span class="text-white font-semibold">${cfg.sapaan}</span> — Data terisolasi pada tab <code class="text-amber-400 font-mono">${cfg.sheetTab}</code>.`;
 
             renderAll();
-            showToast(`Beralih ke brankas ${cfg.namaPanggilan} (${cfg.sheetTab})`);
+            fetchRealtimeData(profileKey);
         }
 
         // Toggle Privacy Blur
@@ -918,7 +948,9 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         // Render Chart.js Executive Visuals
         function renderCharts() {
-            const ctx = document.getElementById('cfoChartCanvas').getContext('2d');
+            const canvasEl = document.getElementById('cfoChartCanvas');
+            if (!canvasEl) return;
+            const ctx = canvasEl.getContext('2d');
             const rows = db[currentProfile] || [];
 
             if (chartInstance) {
@@ -926,7 +958,6 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
             }
 
             if (activeChartTab === 'trend') {
-                // Group by Date
                 const dateMap = {};
                 rows.forEach(r => {
                     if (activeWalletFilter !== 'ALL' && r.dompet !== activeWalletFilter) return;
@@ -987,7 +1018,6 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     }
                 });
             } else {
-                // Wallet Outflow Distribution (Donut)
                 const walletOutflow = {};
                 rows.filter(r => r.tipe === 'Keluar').forEach(r => {
                     walletOutflow[r.dompet] = (walletOutflow[r.dompet] || 0) + r.harga;
@@ -1042,19 +1072,21 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         // Render 6-Column Google Sheets Ledger
         function renderLedger() {
             const container = document.getElementById('ledgerContainer');
-            const query = (document.getElementById('searchLedgerInput').value || '').toLowerCase();
+            const searchInput = document.getElementById('searchLedgerInput');
+            const query = (searchInput ? searchInput.value : '').toLowerCase();
             const rows = (db[currentProfile] || []).slice().reverse();
 
             const filtered = rows.filter(r => {
                 const matchWallet = activeWalletFilter === 'ALL' || r.dompet === activeWalletFilter;
                 const matchType = activeLedgerTypeFilter === 'ALL' || r.tipe === activeLedgerTypeFilter;
-                const matchSearch = r.item.toLowerCase().includes(query) ||
-                                    r.dompet.toLowerCase().includes(query) ||
-                                    r.harga.toString().includes(query);
+                const matchSearch = (r.item || '').toLowerCase().includes(query) ||
+                                    (r.dompet || '').toLowerCase().includes(query) ||
+                                    (r.harga || '').toString().includes(query);
                 return matchWallet && matchType && matchSearch;
             });
 
-            document.getElementById('ledgerCountBadge').textContent = `${filtered.length} Transaksi`;
+            const countBadge = document.getElementById('ledgerCountBadge');
+            if (countBadge) countBadge.textContent = `${filtered.length} Transaksi`;
 
             if (filtered.length === 0) {
                 container.innerHTML = `
@@ -1102,6 +1134,7 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
             activeLedgerTypeFilter = type;
             ['ALL', 'Masuk', 'Keluar'].forEach(t => {
                 const btn = document.getElementById('filterType' + (t === 'ALL' ? 'All' : t));
+                if (!btn) return;
                 if (t === type) {
                     btn.className = "px-3 py-2 rounded-xl text-xs font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40";
                 } else {
@@ -1187,7 +1220,7 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
             const tanggal = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
             const waktu = now.toTimeString().slice(0, 5);
 
-            // Append in exact 6-column schema
+            if (!db[currentProfile]) db[currentProfile] = [];
             db[currentProfile].push({
                 tanggal,
                 waktu,
@@ -1203,7 +1236,6 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
             const cmd = buildBotCommandString();
             closeModal('modalTransaction');
 
-            // If inside Telegram WebApp, also offer direct sendData
             if (window.Telegram?.WebApp?.initData) {
                 window.Telegram.WebApp.sendData(cmd);
             }
@@ -1398,7 +1430,9 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         window.onload = function () {
             initTelegramBridge();
             renderAll();
+            // Otomatis tarik data real-time saat dashboard pertama kali terbuka
+            fetchRealtimeData(currentProfile);
         };
-    </script>
+</script>
 </body>
 </html>
